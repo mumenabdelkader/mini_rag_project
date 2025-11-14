@@ -1,7 +1,7 @@
 from .BaseController import BaseController
 from fastapi import UploadFile
 from models.enums import ResponseEnum 
-from .projectController import projectController
+from .projectController import ProjectController
 import os
 import re
 class DataController(BaseController):
@@ -24,7 +24,7 @@ class DataController(BaseController):
         return True, ResponseEnum.file_valid.value
     def genrate_uniq_file_path(self,original_filename: str, project_id: str) -> str:
         randum_key = self.generate_randum_string()
-        project_path= projectController().get_project_path(project_id=project_id)
+        project_path = ProjectController().get_project_path(project_id=project_id)
         clean_filename = self.get_clean_filename(original_filename)
         new_filePath = os.path.join(project_path, f"{randum_key}_{clean_filename}")
         while os.path.exists(new_filePath):
