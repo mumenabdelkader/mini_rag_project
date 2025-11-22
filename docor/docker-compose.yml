@@ -1,0 +1,18 @@
+services:
+ mongodb:
+   image: mongo:8.2.1-noble
+   container_name: mongodb
+   ports:
+     - "27007:27017"
+   volumes:
+     - ./mongo_data:/data/db
+   networks:
+     - backend
+   environment:
+     MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+     MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+   restart: always
+networks:
+  backend:
+
+  #D:\computer vision\mini_rag_project\docor
