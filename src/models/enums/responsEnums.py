@@ -7,4 +7,6 @@ class ResponseEnum(Enum):
     file_valid = "File is valid."
     file_processing_failed = "File processing failed."
     file_processed_success = "File processed successfully."
+    no_files_to_process = "No files to process."
+    file_not_found = "File not found."
 

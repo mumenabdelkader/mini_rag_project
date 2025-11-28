@@ -6,10 +6,14 @@ import os
 import aiofiles
 from models.enums import ResponseEnum
 import logging
-from .schemes.data import processeRequest
+from .schemes.data import processeRequest 
 from models.project_model import ProjectModel
 from models.db_schemes.data_chunk import DataChunk
 from models.chunkModel import chunkModel
+from models.assetsModel import assetsModel
+from models.db_schemes.assets import Asset
+from bson.objectid import ObjectId
+from models.enums.assetType import AssetTypeEnum
 logger = logging.getLogger('uvicorn.error')
 data_router=APIRouter(
     tags=["api_v1", "data"],
@@ -49,10 +53,22 @@ async def upload_data( request: Request , project_id: str,file:UploadFile,app_se
                 "error": str(e)
             }
         )
+    
+
+    assets_model= await  assetsModel.create_instance(db_client=request.app.mongodb)
+    asset_resource= Asset(
+            asset_project_id=ObjectId(project.id),
+            asset_name=file_id ,
+            asset_type=AssetTypeEnum.FILE,
+            asset_size=os.path.getsize(file_path),
+        )
+    
+    assets_record=await assets_model.create_asset(data_asset=asset_resource)
+
     return JSONResponse(
           content={
                     "result_signal": ResponseEnum.file_uploaded_success.value
-                    ,"file_id":file_id
+                    ,"file_id":str(assets_record.id)
                     ,"project_id":str(project.id)
                     
                     
@@ -62,56 +78,101 @@ async def upload_data( request: Request , project_id: str,file:UploadFile,app_se
 @data_router.post("/process/{project_id}")
 
 async def process_endpoint(project_id:str,request: Request,process_request: processeRequest):
-    file_id= process_request.project_id
+   
     chank_size= process_request.chunk_size
     chunk_overlap= process_request.overlap_size
     do_reset= process_request.do_reset
 
     project_model  =await ProjectModel.create_instance(db_client=request.app.mongodb)
+    assets_model= await  assetsModel.create_instance(db_client=request.app.mongodb)
 
     project= await project_model .get_project_or_create_one(project_id=project_id)
-
-  
-    process_controller = ProcessController(project_id=project_id)
-    file_content= process_controller.get_file_content(file_id=file_id)
-    chunks= process_controller.process_file_content(
-        file_content=file_content,
-        file_id=file_id,
-        chunk_size=chank_size,
-        chunk_overlap=chunk_overlap
-    )
-    if chunks is None or len(chunks) == 0:
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    project_file_ids= {}
+    if process_request.file_id is not None:
+        asset_record= await assets_model.get_asset_record(
+            asset_project_id=project.id,
+            asset_name=process_request.file_id
+        )
+        if asset_record is None:
+            return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
             content={
-                "result_signal": ResponseEnum.file_processing_failed.value,
-                "error": "No chunks were created from the file content."
+                "result_signal": ResponseEnum.file_not_found.value,
+                
             }
         )
-    file_chunks_records= [
-       DataChunk(
-            chunk_txt =chunk.page_content, 
-            chunk_metadata = chunk.metadata,
-            chunk_order =i+1,
-            chunk_project_id=project.id
-
-       )
-        for i,chunk  in enumerate(chunks)
-    ]
-    chunk_model=await chunkModel.create_instance(db_client=request.app.mongodb)
-    if do_reset ==1:
         
-        deleted_count= await chunk_model.delete_chunks_by_project_id(prject_id=project.id)
-        logger.info(f"Deleted {deleted_count} chunks for project ID {project_id} due to reset request.")
+        project_file_ids={
+            asset_record.id : str(asset_record.asset_name)
+        }
+    else:
+        
+        project_files= await assets_model.get_all_project_asset(asset_project_id=project.id , asset_type=AssetTypeEnum.FILE.value)
+        project_file_ids={ 
+            record.id : str(record.asset_name)
+            for record in project_files
+            }
+    if len( project_file_ids) ==0:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "result_signal": ResponseEnum.no_files_to_process.value,
+                
+            }
+        )
+  
+    process_controller = ProcessController(project_id=project_id)
+    noChunks=0
+    nofiles=0
+    chunk_model=await chunkModel.create_instance(db_client=request.app.mongodb)
 
+    if do_reset ==1:
+            
+            deleted_count= await chunk_model.delete_chunks_by_project_id(prject_id=project.id)
+            logger.info(f"Deleted {deleted_count} chunks for project ID {project_id} due to reset request.")
+        
+    for asset_id,file_id in project_file_ids.items():
+
+        file_content= process_controller.get_file_content(file_id=file_id)
+        if file_content is None:
+            logger.error(f"Failed to load content for file ID {file_id}. Skipping processing.")
+            continue
+        chunks= process_controller.process_file_content(
+            file_content=file_content,
+            file_id=file_id,
+            chunk_size=chank_size,
+            chunk_overlap=chunk_overlap
+        )
+        if chunks is None or len(chunks) == 0:
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={
+                    "result_signal": ResponseEnum.file_processing_failed.value,
+                    "error": "No chunks were created from the file content."
+                }
+            )
+        file_chunks_records= [
+        DataChunk(
+                chunk_txt =chunk.page_content, 
+                chunk_metadata = chunk.metadata,
+                chunk_order =i+1,
+                chunk_project_id=project.id,
+                chunk_asset_id=str(asset_id)
+
+        )
+            for i,chunk  in enumerate(chunks)
+        ]
+        
+        
+        noChunks += await chunk_model.insert_many_chunks(file_chunks_records)
+        nofiles +=1
+        logger.info(f"Inserted {noChunks} chunks into the database for file ID {file_id}.")
     
-    noChunks= await chunk_model.insert_many_chunks(file_chunks_records)
-    logger.info(f"Inserted {noChunks} chunks into the database for file ID {file_id}.")
-
     return JSONResponse(
           content={
                     "signal": ResponseEnum.file_processed_success.value,
                     "inserted_chunks": noChunks
+                    ,"processed_files": nofiles
                     
                 }
                 )

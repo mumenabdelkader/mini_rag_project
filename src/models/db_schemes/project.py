@@ -6,7 +6,7 @@ class Project(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     project_id: str = Field(..., min_length=1)
 
-    @field_validator("id", mode="before")
+    @field_validator("id", mode="before")                 #هو مش حاططها 
     def convert_objectid(cls, v):
         if isinstance(v, ObjectId):
             return str(v)

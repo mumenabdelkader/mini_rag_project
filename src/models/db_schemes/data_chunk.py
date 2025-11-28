@@ -9,6 +9,7 @@ class DataChunk(BaseModel):
     chunk_metadata: dict
     chunk_order: int = Field(..., gt=0)
     chunk_project_id: str
+    chunk_asset_id: str
 
     # -------- Validators -------- #
     @field_validator("chunk_project_id", "id", mode="before")

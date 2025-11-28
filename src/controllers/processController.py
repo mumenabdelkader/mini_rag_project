@@ -17,6 +17,9 @@ class ProcessController(BaseController):
     def get_file_loader(self,file_id:str):
         file_extension = self.get_file_extensions(file_id).lower()
         file_path = os.path.join(self.project_path, file_id)
+        if not os.path.exists(file_path):
+            return None
+        
 
         if file_extension == ProcessingEnum.txt.value:
             return TextLoader(file_path, encoding="utf-8")
@@ -28,6 +31,8 @@ class ProcessController(BaseController):
     def get_file_content(self,file_id:str):
         loader = self.get_file_loader(file_id)
         documents = loader.load()
+        if documents is None:
+            return None
         return documents
     
     def process_file_content(self,file_content:str,file_id:str,chunk_size:int=100,chunk_overlap:int=20):
