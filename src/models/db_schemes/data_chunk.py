@@ -4,7 +4,7 @@ from bson.objectid import ObjectId
 
 
 class DataChunk(BaseModel):
-    id: Optional[ObjectId] = Field(default=None, alias="_id")
+    id: Optional[str] = Field(default=None, alias="_id")
     chunk_txt: str = Field(..., min_length=1)
     chunk_metadata: dict
     chunk_order: int = Field(..., gt=0)

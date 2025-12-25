@@ -1,9 +1,9 @@
 from enum import Enum
 class LLMEnums( Enum):
-    OPENAI = "openai"
+    OPENAI = "OPENAI"
     ANTHROPIC = "anthropic"
     AZURE_OPENAI = "azure_openai"
-    COHERE = "cohere"
+    COHERE = "COHERE"
     AI21 = "ai21"
     GOOGLE_PALM = "google_palm"
     LLM_PROVIDER_X = "llm_provider_x"  # Placeholder for future providers
@@ -15,3 +15,13 @@ class openAIenums( Enum):
     system = "system"
     assistant = "assistant" 
     user = "user"
+
+class cohereEnums( Enum):
+    DOCUMENT = "search_document"
+    QUERY = "search_query"
+    system = "SYSTEM"
+    assistant = "CHATBOT" 
+    user = "USER"
+class DecomentTypeEnums( Enum):
+    DOCUMENT = "document"
+    QUERY = "query"

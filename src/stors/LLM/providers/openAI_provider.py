@@ -5,7 +5,10 @@ import logging
 
 class OpenAIProvider(LLMInterface):
 
-    def __init__(self, api_key: str,api_url: str = None,defaulet_input_max_characters: int = 1000,defaulet_output_token_limit: int = 1000, defaulet_temperature: float = 0.1):
+    def __init__(self, api_key: str,api_url: str = None,
+                 defaulet_input_max_characters: int = 1000,
+                 defaulet_output_token_limit: int = 1000,
+                   defaulet_temperature: float = 0.1):
         self.api_key = api_key
         self.api_url = api_url
         self.defaulet_input_max_characters = defaulet_input_max_characters
@@ -46,7 +49,7 @@ class OpenAIProvider(LLMInterface):
             temperature=temperature
         )
         if not response or not response.choices or len(response.choices) == 0 or not response.choices[0].message:
-            self.logger.error("Failed to get response from OpenAI.")
+            self.logger.error("Failed to get response from OpenAI.")    
             return None
         return response.choices[0].message.content
     
