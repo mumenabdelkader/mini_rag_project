@@ -13,15 +13,21 @@ class openAIenums( Enum):
     GPT_4 = "gpt-4"
     TEXT_EMBEDDING_ADA_002 = "text-embedding-ada-002"
     system = "system"
-    assistant = "assistant" 
+    SYSTEM = "system"
+    assistant = "assistant"
+    ASSISTANT = "assistant"
     user = "user"
+    USER = "user"
 
 class cohereEnums( Enum):
     DOCUMENT = "search_document"
     QUERY = "search_query"
     system = "SYSTEM"
-    assistant = "CHATBOT" 
+    SYSTEM = "SYSTEM"
+    assistant = "CHATBOT"
+    ASSISTANT = "CHATBOT"
     user = "USER"
+    USER = "USER"
 class DecomentTypeEnums( Enum):
     DOCUMENT = "document"
     QUERY = "query"

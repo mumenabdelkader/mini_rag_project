@@ -1,6 +1,8 @@
 from qdrant_client import models,QdrantClient
 from ..vectorDbinterface import VectorDBInterface
 from ..vectorDBenums import DistanceMethodEnums
+from models.db_schemes.data_chunk import RetriveDocument
+
 import logging
 
 class QdrantDb (VectorDBInterface):
@@ -105,13 +107,23 @@ class QdrantDb (VectorDBInterface):
          return True
     
     def searchByVector(self, collection_name, query_vector, limit):
-        return self.client.query_points(
+        results= self.client.query_points(
             collection_name=collection_name,
             query=query_vector,   # ✅ الاسم الصح
             limit=limit,
             with_payload=True,
             with_vectors=False
         )
+        if not results :
+            return None
+        return [
+            RetriveDocument(
+                document_text= point.payload.get("text",""),
+                document_metadata= point.payload.get("metadate",{}),
+                similarity_score= point.score
+            )
+            for point in results.points
+        ]
 
 
           

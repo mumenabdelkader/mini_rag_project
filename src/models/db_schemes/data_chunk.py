@@ -37,3 +37,8 @@ class DataChunk(BaseModel):
             },
             
         ]
+    
+class RetriveDocument(BaseModel):
+    document_text: str
+    document_metadata: dict
+    similarity_score: float

@@ -3,12 +3,14 @@ from models.db_schemes import project
 from stors .LLM .llmEnums import DecomentTypeEnums
 from models.db_schemes.data_chunk import DataChunk 
 import json
+from tqdm import tqdm
 class NLPController(BaseController):
-    def __init__(self, ganeration_client,vector_db_client, embedding_client):
+    def __init__(self, ganeration_client,vector_db_client, embedding_client,templete_parser):
         super().__init__()
         self.vector_db_client = vector_db_client
         self.embedding_client = embedding_client
         self.ganeration_client = ganeration_client
+        self.templete_parser= templete_parser
     def collection_name(self, project_id: str) -> str:
         return f"nlp_collection_{project_id}".strip()
     
@@ -41,12 +43,13 @@ class NLPController(BaseController):
             
         # generate embeddings for texts
         vectors = []
-        for text in texts:
+        for idx in tqdm(range(0, len(texts), 10), desc="Generating embeddings", unit="text"):
+            batch_texts = texts[idx:idx + 10]
             vec = self.embedding_client.embedding_text(
-                text=text,
+                text=batch_texts,
                 decument_type=DecomentTypeEnums.DOCUMENT.value,
             )
-            vectors.append(vec)
+            vectors.extend(vec if vec else [None] * len(batch_texts))
 
         # validate embeddings
         if not vectors or len(vectors) == 0:
@@ -127,5 +130,43 @@ class NLPController(BaseController):
         if not search_results:
             return False
 
-        return json.loads(json.dumps(search_results, default=lambda o: o.__dict__))
+        return search_results
     
+    def ansewer_rag_query(self, project: project, query: str,limit: int = 10):
+        ansewer,full_prompt,chat_history=None,None,None
+
+        search_results = self.search_vector_db(project=project, text=query, limit=limit)
+       
+        if not search_results or len(search_results) == 0:
+            return ansewer,full_prompt,chat_history
+
+        system_prompt=self.templete_parser.get_rag_templet("rag","system_prompt")
+
+        # decoment_prompts=[ ]
+        # for idx,doc in enumerate(search_results):
+        #     decoment_prompts.append(self.templete_parser.get_decoment_prompt("rag","decoment_prompt",{
+        #         "doc_no":idx+1,
+        #         "chunk_text":doc.document_text}))
+
+        decoment_prompts="\n".join([
+            self.templete_parser.get_rag_templet("rag","decoment_prompt",{
+                "doc_no":idx+1,
+                "chunk_text":doc.document_text})
+            for idx,doc in enumerate(search_results)
+        ])
+
+        footer_prombet=self.templete_parser.get_rag_templet("rag","footer_prompt")
+
+        chat_history=[
+            self.ganeration_client.construct_prompt(system_prompt, self.ganeration_client.enums.SYSTEM.value),
+            # self.ganeration_client.construct_prompt(decoment_prompts, self.ganeration_client.enums.user.value),
+            # self.ganeration_client.construct_prompt(footer_prombet, self.ganeration_client.enums.user.value),
+            # self.ganeration_client.construct_prompt(query, self.ganeration_client.enums.user.value),
+        ]
+        full_prompt=f"{decoment_prompts}\n{footer_prombet}\nQuestion: {query}"
+        ansewer=self.ganeration_client.generate_text(
+            prompt=full_prompt,
+            chat_history=chat_history,
+            
+        )
+        return ansewer,full_prompt,chat_history

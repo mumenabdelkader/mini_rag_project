@@ -1,5 +1,6 @@
 from abc import ABC ,abstractmethod
 from typing import List
+from models.db_schemes.data_chunk import RetriveDocument
 
 class VectorDBInterface(ABC):
     @abstractmethod 
@@ -32,6 +33,6 @@ class VectorDBInterface(ABC):
     def insertMany(self,collection_name:str,text:list,vector:list ,metadate:list,record_ids:list,batch_size:int=50):
         pass
     @abstractmethod 
-    def searchByVector(self,collection_name:str,vector:list ,limit:int):
+    def searchByVector(self,collection_name:str,vector:list ,limit:int)-> List[RetriveDocument]:
         pass
 

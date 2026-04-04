@@ -5,6 +5,7 @@ from helpers.config import get_settings
 from routs import base, data, nlp
 from stors.LLM.llmFactory import LLMProviderFactory
 from stors.vectorDB.vectorDBfactory import VectorDBFactory
+from stors.LLM.templets.templet_parser import Templete_Parser
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,6 +27,7 @@ async def lifespan(app: FastAPI):
     app.vector_db_client = vector_db_provider_factory.create(settings.VECTOR_DB_BACKEND)
     app.vector_db_client.connect()
     print("📌 MongoDB Connected")
+    app.templete_parser= Templete_Parser(lang=settings.PRIMARY_LANGUAGE,defoult_lang=settings.DEFOULT_LANGUAGE)
 
     yield  # ← هنا التطبيق يشتغل
 

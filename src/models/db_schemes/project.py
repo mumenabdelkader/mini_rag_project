@@ -5,6 +5,7 @@ from bson.objectid import ObjectId
 class Project(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     project_id: str = Field(..., min_length=1)
+    max_output_tokens: Optional[int] = None
 
     @field_validator("id", mode="before")                 #هو مش حاططها 
     def convert_objectid(cls, v):

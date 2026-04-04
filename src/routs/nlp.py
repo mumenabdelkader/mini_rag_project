@@ -26,7 +26,8 @@ async def push_data_to_index(request: Request, project_id: str,puch_request: pus
      nlp_controller=NLPController(
          vector_db_client=request.app.vector_db_client,
          ganeration_client=request.app.ganeration_client,
-         embedding_client=request.app.embedding_client
+         embedding_client=request.app.embedding_client,
+         templete_parser=request.app.templete_parser
          )
      has_recodrs=True
      page_num=1
@@ -35,7 +36,7 @@ async def push_data_to_index(request: Request, project_id: str,puch_request: pus
      while has_recodrs:
          
         page_chunks= await chunck_model.get_project_chunks(project_id=project.id,page_num=page_num)
-        if len(page_chunks)==0:
+        if len(page_chunks)!=0:
             page_num+=1
         if not page_chunks or len(page_chunks)==0:
             has_recodrs=False
@@ -54,7 +55,7 @@ async def push_data_to_index(request: Request, project_id: str,puch_request: pus
                 "signal": ResponseEnum.INSERT_INTO_VECTOR_DB_FAILED.value
                 })
         inserted_items_count += len(page_chunks)
-        return JSONResponse(
+     return JSONResponse(
             status_code=status.HTTP_200_OK, content={
                 "signal": ResponseEnum.INSERT_INTO_VECTOR_DB_SUCCESS.value,
                 "inserted_items_count": inserted_items_count
@@ -74,7 +75,8 @@ async def get_project_index_info(request: Request, project_id: str):
      nlp_controller=NLPController(
          vector_db_client=request.app.vector_db_client,
          ganeration_client=request.app.ganeration_client,
-         embedding_client=request.app.embedding_client
+         embedding_client=request.app.embedding_client,
+         templete_parser=request.app.templete_parser
          )
      collection_info= nlp_controller.get_vector_db_collection_info(project=project)
      if not collection_info:
@@ -100,7 +102,8 @@ async def search_index(request: Request, project_id: str, search_request: search
         nlp_controller=NLPController(
             vector_db_client=request.app.vector_db_client,
             ganeration_client=request.app.ganeration_client,
-            embedding_client=request.app.embedding_client
+            embedding_client=request.app.embedding_client,
+            templete_parser=request.app.templete_parser
             )
         
         search_results= nlp_controller.search_vector_db(
@@ -116,6 +119,41 @@ async def search_index(request: Request, project_id: str, search_request: search
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={
                 "signal":  ResponseEnum.VECTOR_DB_SEARCH_SUCCESS.value,
-                "results": search_results
+                "results": [result.dict() for result in search_results]
             }
             )
+
+@nlp_router.post("/index/answer/{project_id}")
+async def answer_index(request: Request, project_id: str, search_request: searchRequest):
+    project_Model = await ProjectModel.create_instance(db_client=request.app.mongodb)
+    project = await project_Model.get_project_or_create_one(project_id=project_id)
+    
+    if not project:
+        return JSONResponse(status_code=404, content={"signal": ResponseEnum.project_not_found.value})
+
+    # تأكد من أن الأسماء هنا تطابق الـ __init__ في الـ Controller
+    nlp_controller = NLPController(
+        vector_db_client=request.app.vector_db_client,
+        ganeration_client=request.app.ganeration_client,
+        embedding_client=request.app.embedding_client,
+        templete_parser=request.app.templete_parser # الحروف الصغيرة t
+    )
+
+    answer, full_prompt, chat_history = nlp_controller.ansewer_rag_query(
+        project=project,
+        query=search_request.text,
+        limit=search_request.limit
+    )
+
+    if answer is None:
+        return JSONResponse(status_code=500, content={"signal": ResponseEnum.RAG_PROCESSING_FAILED.value})
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "signal": ResponseEnum.RAG_PROCESSING_SUCCESS.value,
+            "answer": answer,
+            "full_prompt": full_prompt,
+            "chat_history": chat_history
+        }
+    )

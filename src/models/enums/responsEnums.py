@@ -19,4 +19,8 @@ class ResponseEnum(Enum):
     VECTOR_DB_COLLECTION_NOT_FOUND = "Vector DB collection not found."
     VECTOR_DB_SEARCH_FAILED = "Vector DB search failed."
     VECTOR_DB_SEARCH_SUCCESS = "Vector DB search completed successfully."
+    ANSWER_GENERATION_FAILED = "Answer generation failed."
+    ANSWER_GENERATION_SUCCESS = "Answer generated successfully."
+    RAG_PROCESSING_FAILED = "RAG processing failed."
+    RAG_PROCESSING_SUCCESS = "RAG processing completed successfully."
 

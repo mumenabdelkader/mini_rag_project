@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: FastAPI",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            // Update this path to match where Conda/Miniconda is installed on your PC
+            "python": "C:\\Users\\Amr\\miniconda3\\envs\\fastapi_env\\python.exe", 
+            "cwd": "${workspaceFolder}/src",
+            "args": [
+                "main:app",
+                "--reload",
+                "--port",
+                "5000"
+            ],
+            "jinja": true
+        }
+    ]
+}
