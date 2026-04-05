@@ -11,7 +11,7 @@ class CohereProvider(LLMInterface):
     def __init__(
         self,
         api_key: str,
-        defaulet_input_max_characters: int = 2000, # زيادة عدد الحروف للـ RAG
+        defaulet_input_max_characters: int = 20000, # زيادة عدد الحروف للـ RAG
         defaulet_output_token_limit: int = 1000,
         defaulet_temperature: float = 0.1,
     ):

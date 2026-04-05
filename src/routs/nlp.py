@@ -33,6 +33,7 @@ async def push_data_to_index(request: Request, project_id: str,puch_request: pus
      page_num=1
      inserted_items_count = 0
      idx=0
+     first_iteration = True
      while has_recodrs:
          
         page_chunks= await chunck_model.get_project_chunks(project_id=project.id,page_num=page_num)
@@ -46,9 +47,10 @@ async def push_data_to_index(request: Request, project_id: str,puch_request: pus
         is_inserted= nlp_controller.index_vector_db(
             project=project,
             chunks=page_chunks,
-            do_reset= puch_request.do_reset,
+            do_reset= puch_request.do_reset if first_iteration else False,
             chunk_ids=chunks_ids
             )
+        first_iteration = False
         if not is_inserted:
             logger.error(f"Failed to index chunks for project {project.project_id} on page {page_num}")
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={

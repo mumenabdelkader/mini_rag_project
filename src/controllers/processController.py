@@ -35,7 +35,7 @@ class ProcessController(BaseController):
             return None
         return documents
     
-    def process_file_content(self,file_content:str,file_id:str,chunk_size:int=100,chunk_overlap:int=20):
+    def process_file_content(self,file_content:str,file_id:str,chunk_size:int=800,chunk_overlap:int=200):
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
