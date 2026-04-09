@@ -135,6 +135,11 @@ async def process_endpoint(project_id:str,request: Request,process_request: proc
 
         file_content= process_controller.get_file_content(file_id=file_id)
         if file_content is None:
+            return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            content={"signal": "File not found or has been deleted."}
+                )
+        if file_content is None:
             logger.error(f"Failed to load content for file ID {file_id}. Skipping processing.")
             continue
         chunks= process_controller.process_file_content(
@@ -176,3 +181,24 @@ async def process_endpoint(project_id:str,request: Request,process_request: proc
                     
                 }
                 )
+@data_router.delete("/reset-database")
+async def reset_database(request: Request):
+    try:
+        # استدعاء الـ Model
+        asset_model = await assetsModel.create_instance(db_client=request.app.mongodb)
+        
+        # تنفيذ دالة المسح الشامل
+        deleted_assets_count = await asset_model.delete_all_assets()
+        
+        return JSONResponse(
+            status_code=status.HTTP_200_OK, 
+            content={
+                "signal": "Database cleaned successfully!",
+                "deleted_files_count": deleted_assets_count
+            }
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            content={"signal": f"Error cleaning database: {str(e)}"}
+        )

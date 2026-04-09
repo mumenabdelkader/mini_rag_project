@@ -12,7 +12,7 @@ class CohereProvider(LLMInterface):
         self,
         api_key: str,
         defaulet_input_max_characters: int = 20000, # زيادة عدد الحروف للـ RAG
-        defaulet_output_token_limit: int = 1000,
+        defaulet_output_token_limit: int = 2000,
         defaulet_temperature: float = 0.1,
     ):
         self.api_key = api_key

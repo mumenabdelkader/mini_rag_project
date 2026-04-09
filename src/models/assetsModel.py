@@ -60,4 +60,8 @@ class assetsModel(BaseDataModel):
     # async def delete_assets_by_project_id(self, project_id: ObjectId):
     #     result = await self.collection.delete_many({"asset_project_id": project_id})
     #     return result.deleted_count
+    # دالة لمسح كل الملفات من قاعدة البيانات (Reset)
+    async def delete_all_assets(self):
+        result = await self.collection.delete_many({})
+        return result.deleted_count
     
